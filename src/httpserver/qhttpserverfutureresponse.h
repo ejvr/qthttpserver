@@ -117,14 +117,20 @@ class RunFunctionTask<QHttpServerResponse> : public RunFunctionTaskBase<QHttpSer
 public:
     void run() override
     {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         if (this->isCanceled()) {
             this->reportFinished();
+#else
+        if (promise.isCanceled()) {
+            promise.reportFinished();
+#endif // QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
             return;
         }
 #ifndef QT_NO_EXCEPTIONS
         try {
 #endif
             this->runFunctor();
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #ifndef QT_NO_EXCEPTIONS
         } catch (QException &e) {
             QFutureInterface<QHttpServerResponse>::reportException(e);
@@ -134,6 +140,17 @@ public:
 #endif
         this->reportAndMoveResult(std::move_if_noexcept(result));
         this->reportFinished();
+#else
+#ifndef QT_NO_EXCEPTIONS
+        } catch (QException &e) {
+            promise.reportException(e);
+        } catch (...) {
+            promise.reportException(QUnhandledException());
+        }
+#endif
+        promise.reportAndMoveResult(std::move_if_noexcept(result));
+        promise.reportFinished();
+#endif // QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     }
 
     QHttpServerResponse result{QHttpServerResponse::StatusCode::NotFound};

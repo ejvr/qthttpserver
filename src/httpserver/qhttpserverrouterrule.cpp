@@ -228,7 +228,11 @@ bool QHttpServerRouterRule::createPathRegexp(const std::initializer_list<int> &m
     const QLatin1String arg("<arg>");
     for (auto type : metaTypes) {
         if (type >= QMetaType::User
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
             && !QMetaType::hasRegisteredConverterFunction(qMetaTypeId<QString>(), type)) {
+#else
+            && !QMetaType::hasRegisteredConverterFunction(static_cast<QMetaType>(qMetaTypeId<QString>()), static_cast<QMetaType>(type))) {
+#endif
             qCWarning(lcRouterRule) << QMetaType::typeName(type)
                                     << "has not registered a converter to QString."
                                     << "Use QHttpServerRouter::addConverter<Type>(converter).";
