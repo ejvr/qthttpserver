@@ -13,6 +13,7 @@ qt_add_module(HttpServer
         qhttpserverrequest.cpp qhttpserverrequest.h qhttpserverrequest_p.h
         qhttpserverresponder.cpp qhttpserverresponder.h qhttpserverresponder_p.h
         qhttpserverresponse.cpp qhttpserverresponse.h qhttpserverresponse_p.h
+        qhttpservereventresponse.cpp qhttpservereventresponse.h
         qhttpserverrouter.cpp qhttpserverrouter.h qhttpserverrouter_p.h
         qhttpserverrouterrule.cpp qhttpserverrouterrule.h qhttpserverrouterrule_p.h
         qhttpserverrouterviewtraits.h
