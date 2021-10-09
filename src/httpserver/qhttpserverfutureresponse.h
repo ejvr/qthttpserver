@@ -112,35 +112,37 @@ public:
 namespace QtConcurrent {
 
 template <>
-class RunFunctionTask<QHttpServerResponse> : public RunFunctionTaskBase<QHttpServerResponse>
+class RunFunctionTaskBase<QHttpServerResponse> : public QRunnable
 {
 public:
+    QFuture<QHttpServerResponse> start()
+    {
+        return start(TaskStartParameters());
+    }
+
+    QFuture<QHttpServerResponse> start(const TaskStartParameters &parameters)
+    {
+        promise.setThreadPool(parameters.threadPool);
+        promise.setRunnable(this);
+        promise.reportStarted();
+        QFuture<QHttpServerResponse> theFuture = promise.future();
+        parameters.threadPool->start(this, parameters.priority);
+        return theFuture;
+    }
+
+    // For backward compatibility
+    QFuture<QHttpServerResponse> start(QThreadPool *pool) { return start({pool, 0});  }
+
     void run() override
     {
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-        if (this->isCanceled()) {
-            this->reportFinished();
-#else
         if (promise.isCanceled()) {
             promise.reportFinished();
-#endif // QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
             return;
         }
 #ifndef QT_NO_EXCEPTIONS
         try {
 #endif
             this->runFunctor();
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-#ifndef QT_NO_EXCEPTIONS
-        } catch (QException &e) {
-            QFutureInterface<QHttpServerResponse>::reportException(e);
-        } catch (...) {
-            QFutureInterface<QHttpServerResponse>::reportException(QUnhandledException());
-        }
-#endif
-        this->reportAndMoveResult(std::move_if_noexcept(result));
-        this->reportFinished();
-#else
 #ifndef QT_NO_EXCEPTIONS
         } catch (QException &e) {
             promise.reportException(e);
@@ -150,10 +152,14 @@ public:
 #endif
         promise.reportAndMoveResult(std::move_if_noexcept(result));
         promise.reportFinished();
-#endif // QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     }
 
     QHttpServerResponse result{QHttpServerResponse::StatusCode::NotFound};
+
+protected:
+    virtual void runFunctor() = 0;
+
+    QFutureInterface<QHttpServerResponse> promise;
 };
 
 }
